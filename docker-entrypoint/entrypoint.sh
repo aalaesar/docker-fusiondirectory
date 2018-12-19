@@ -121,6 +121,7 @@ fd_install_ldap_schema() {
 
 run_fusiondirectory() {
   fusiondirectory-setup --check-directories --update-cache --update-locales
+  chmod 777 /tmp
   echo "Starting fusiondirectory >>>"
   exec apache2ctl -D FOREGROUND
   echo "FusionDirectory execution stopped"
