@@ -181,7 +181,8 @@ else
   case $1 in
     install) shift
       case $1 in
-        plugin) shift;  fd_install_plugins "$@" ;;
+	      schema|schemas) shift; fd_install_ldap_schema ;;
+        plugin|plugins) shift;  fd_install_plugins "$@" ;;
       esac
      ;;
   esac
