@@ -1,13 +1,18 @@
 #!/bin/bash
-set -x
-# requirements
+set -e
 # environnement
+[ "$TERM"  != 'xterm' ] && export DEBIAN_FRONTEND=noninteractive
+# FD_PLUGINS=""
 FD_CONFIG_FILE=/etc/fusiondirectory/fusiondirectory.conf
-#LDAP_CONFIGDN="cn=config"
-LDAP_CONFIGDN_ADMIN="cn=admin,cn=config"
-
-#fusiondirectory-insert-schema -o '-H ldap://ldap.netcore.svc.cluster.local -x -D "cn=admin,cn=config" -w secret'
-#ldapsearch -H ldap://ldap.netcore.svc.cluster.local -x -LLL -D "cn=admin,cn=config" -W -b "cn=config" "objectClass=olcSchemaConfig" dn
+# FD_SECRET_CONFIG=""
+[ -z "$FD_FORCE_SETUP" ] && FD_FORCE_SETUP=true
+[ -z "$LDAP_CONFIG_ADMINDN" ] && LDAP_CONFIG_ADMINDN="cn=admin,cn=config"
+# LDAP_CONFIGDN_PASS=""
+# LDAP_ZONE
+# LDAP_URI
+# LDAP_DN
+# LDAP_ADMINDN
+# LDAP_ADMIN_PASS
 
 logging() {
   local this_log_lvl=$1
