@@ -3,10 +3,11 @@ set -e
 # environnement
 [ "$TERM"  != 'xterm' ] && export DEBIAN_FRONTEND=noninteractive
 # FD_PLUGINS=""
-FD_CONFIG_FILE=/etc/fusiondirectory/fusiondirectory.conf
+FD_CONFIG_FILE=${FD_CONFIG_FILE:-'/etc/fusiondirectory/fusiondirectory.conf'}
 # FD_SECRET_CONFIG=""
-[ -z "$FD_FORCE_SETUP" ] && FD_FORCE_SETUP=true
-[ -z "$LDAP_CONFIG_ADMINDN" ] && LDAP_CONFIG_ADMINDN="cn=admin,cn=config"
+FD_FORCE_SETUP=${FD_FORCE_SETUP:-true}
+LDAP_CONFIG_ADMINDN=${LDAP_CONFIG_ADMINDN:-"cn=admin,cn=config"}
+APACHE_SECURITY=${APACHE_SECURITY:-true}
 # LDAP_CONFIGDN_PASS=""
 # LDAP_ZONE
 # LDAP_URI
