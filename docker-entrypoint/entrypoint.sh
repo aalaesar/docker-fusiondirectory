@@ -132,8 +132,48 @@ run_fusiondirectory() {
   echo "FusionDirectory execution stopped"
 }
 
+create_fd_config() {
+  local ldap_zone=$1
+  local ldap_url=$2
+  local ldap_dn=$3
+  local ldap_admindn=$4
+  local ldap_admin_pass=$5
+echo "<?xml version=\"1.0\"?>
+<conf>
+  <main default=\"$ldap_zone\"
+        logging=\"TRUE\"
+        displayErrors=\"FALSE\"
+        forceSSL=\"FALSE\"
+        templateCompileDirectory=\"/var/spool/fusiondirectory/\"
+        debugLevel=\"0\"
+    >
 
-[ ! -f $FD_CONFIG_FILE ] && fd_install_ldap_schema
+    <!-- Location definition -->
+    <location name=\"$ldap_zone\"
+    >
+        <referral URI=\"$ldap_url/$ldap_dn\"
+                        adminDn=\"cn=$ldap_admindn\"
+                        adminPassword=\"$ldap_admin_pass\" />
+    </location>
+  </main>
+</conf>" > $FD_CONFIG_FILE
+}
+# load the n=config password from a eventual secret file.
+[ -f $LDAP_CONFIGDN_PASS ] && LDAP_CONFIGDN_PASS="$(cat $LDAP_CONFIGDN_PASS)"
+
+# in case the config file is not mounted in the container
+if [ "$FD_FORCE_SETUP" = false ] ; then
+  # if the secret file is mounted as a secret
+  if [ -n "$FD_SECRET_CONFIG" ] && [ -f $FD_SECRET_CONFIG ]; then
+    cp $FD_SECRET_CONFIG $FD_CONFIG_FILE
+  else
+    # shellcheck disable=SC2153
+    create_fd_config $LDAP_ZONE $LDAP_URI $LDAP_DN $LDAP_ADMINDN $LDAP_ADMIN_PASS
+  fi
+  chown root:www-data $FD_CONFIG_FILE
+  chmod 640 $FD_CONFIG_FILE
+fi
+fd_install_ldap_schema
 [ -n "$FD_PLUGINS" ] && fd_install_plugins $FD_PLUGINS
 if [ $# -eq 0 ]; then
   run_fusiondirectory
