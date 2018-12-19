@@ -125,6 +125,18 @@ fd_install_ldap_schema() {
 }
 
 run_fusiondirectory() {
+  if [ $APACHE_SECURITY ]; then
+    echo '<Directory />
+   AllowOverride None
+   Require all denied
+</Directory>
+ServerTokens Prod
+ServerSignature Off
+TraceEnable Off
+Header set X-Frame-Options: "sameorigin"
+' > /etc/apache2/conf-available/security.conf
+  a2enconf security
+fi
   fusiondirectory-setup --check-directories --update-cache --update-locales
   chmod 777 /tmp
   echo "Starting fusiondirectory >>>"
