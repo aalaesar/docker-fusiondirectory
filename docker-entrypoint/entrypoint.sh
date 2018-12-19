@@ -185,5 +185,10 @@ else
         plugin|plugins) shift;  fd_install_plugins "$@" ;;
       esac
      ;;
+    service) shift
+      case $1 in
+        start) shift; run_fusiondirectory;;
+        reload|restart) shift; apache2ctl -k graceful ;;
+      esac
   esac
 fi
