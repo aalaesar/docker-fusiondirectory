@@ -52,7 +52,7 @@ fd_install_plugins() {
     logging 1 "looking for dependencies for plugin $my_plugin_name"
     [[ "${fd_plugin_tree[$my_deps_lv]}" == *"$my_plugin_name"* ]] && return 0
     fd_plugin_tree[$my_deps_lv]="${fd_plugin_tree[$my_deps_lv]}$my_plugin_name "
-    let "my_deps_lv++"
+    ((++my_deps_lv)) || true
     my_plugin_deps=($(apt-cache depends "fusiondirectory-plugin-$my_plugin_name" | grep -i -E 'Depends.*plugin' | sed 's/.*fusiondirectory-plugin-//g'))
     for dependence in "${my_plugin_deps[@]}"; do
       create_deps_branch $my_deps_lv $dependence
