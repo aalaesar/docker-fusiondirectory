@@ -20,6 +20,10 @@ RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
 RUN apt-get download fusiondirectory && dpkg-deb -x ./fusiondirectory*.deb /tmp && \
     cp -R /tmp/usr/share/doc/fusiondirectory /usr/share/doc/ && \
     rm -rf /tmp/* && rm fusiondirectory*.deb
+# configure better security for Apache2. disable obsolete configs
+COPY fusiondirectory.conf /etc/apache2/sites-available/fusiondirectory.conf
+RUN a2disconf fusiondirectory other-vhosts-access-log && a2dissite 000-default && \
+    chmod 644 /etc/apache2/sites-available/fusiondirectory.conf && a2ensite fusiondirectory && \
 
 COPY docker-entrypoint/entrypoint.sh /opt/fd/entrypoint.sh
 
