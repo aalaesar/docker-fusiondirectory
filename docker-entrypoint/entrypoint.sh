@@ -6,7 +6,7 @@ set -e
 FD_CONFIG_FILE=${FD_CONFIG_FILE:-'/etc/fusiondirectory/fusiondirectory.conf'}
 # FD_SECRET_CONFIG=""
 FD_FORCE_SETUP=${FD_FORCE_SETUP:-true}
-LDAP_CONFIG_ADMINDN=${LDAP_CONFIG_ADMINDN:-"cn=admin,cn=config"}
+LDAP_CONFIGDN_ADMIN=${LDAP_CONFIGDN_ADMIN:-"cn=admin,cn=config"}
 APACHE_SECURITY=${APACHE_SECURITY:-true}
 # LDAP_CONFIGDN_PASS=""
 # LDAP_ZONE
