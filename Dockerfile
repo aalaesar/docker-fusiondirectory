@@ -2,11 +2,14 @@
 ARG fusiondirectory_version="1.2.3"
 
 FROM debian:stable-slim
-ARG fusiondirectory_version
+ARG fd_version
+ENV FD_HOME /var/www/fusiondirectory
+ENV FD_VERSION ${fd_version}
+ENV FD_PLUGINS_DIR /opt/fd_${FD_VERSION}_plugins
 
 # Install dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    wget ca-certificates \
+    wget ca-certificates curl \
     gettext javascript-common libarchive-extract-perl apache2 locales \
     libjs-prototype libjs-scriptaculous smarty3 libcrypt-cbc-perl \
     libdigest-sha-perl libfile-copy-recursive-perl libnet-ldap-perl \
@@ -35,25 +38,28 @@ RUN mkdir -p /var/cache/fusiondirectory/template \
       /var/cache/fusiondirectory/tmp/ \
       /var/cache/fusiondirectory/locale/ \
       /var/spool/fusiondirectory/ &&\
-      wget https://repos.fusiondirectory.org/sources/fusiondirectory/fusiondirectory-${fusiondirectory_version}.tar.gz -P /opt/ &&\
-      tar -xvzf /opt/fusiondirectory-${fusiondirectory_version}.tar.gz -C /opt &&\
-      mv /opt/fusiondirectory-${fusiondirectory_version} /var/www/fusiondirectory &&\
-      rm /opt/fusiondirectory-${fusiondirectory_version}.tar.gz &&\
-      chmod 750 /var/www/fusiondirectory/contrib/bin/* &&\
-      mv /var/www/fusiondirectory/contrib/bin/* /usr/local/bin/ &&\
-      mv /var/www/fusiondirectory/contrib/smarty/plugins/*.php /usr/share/php/smarty3/plugins/ &&\
+      wget https://repos.fusiondirectory.org/sources/fusiondirectory/fusiondirectory-${FD_VERSION}.tar.gz -P /opt/ &&\
+      tar -xvzf /opt/fusiondirectory-${FD_VERSION}.tar.gz -C /opt &&\
+      mv /opt/fusiondirectory-${FD_VERSION} ${FD_HOME} &&\
+      rm /opt/fusiondirectory-${FD_VERSION}.tar.gz &&\
+      chmod 755 ${FD_HOME}/contrib/bin/* &&\
+      mv ${FD_HOME}/contrib/bin/* /usr/local/bin/ &&\
+      mv ${FD_HOME}/contrib/smarty/plugins/*.php /usr/share/php/smarty3/plugins/ &&\
       mkdir -p /etc/ldap/schema/fusiondirectory/ &&\
-      mv /var/www/fusiondirectory/contrib/openldap/* /etc/ldap/schema/fusiondirectory/ &&\
-      sed 's|mod_php5|mod_php7|g' /var/www/fusiondirectory/contrib/apache/fusiondirectory-apache.conf > /etc/apache2/sites-available/fusiondirectory.conf &&\
-      mv /var/www/fusiondirectory/contrib /var/cache/fusiondirectory/template/fusiondirectory.conf &&\
-      rm -rf /var/www/fusiondirectory/contrib/ && rm -f /opt/fusiondirectory-${fusiondirectory_version}.tar.gz &&\
+      mv ${FD_HOME}/contrib/openldap/* /etc/ldap/schema/fusiondirectory/ &&\
+      mv ${FD_HOME}/contrib/fusiondirectory.conf /var/cache/fusiondirectory/template/fusiondirectory.conf &&\
+      rm -f /opt/fusiondirectory-${FD_VERSION}.tar.gz &&\
       fusiondirectory-setup --yes --check-directories --update-cache --update-locales
 
-#just download the fusiondirectory plugins
-RUN wget https://repos.fusiondirectory.org/sources/fusiondirectory/fusiondirectory-plugins-${fusiondirectory_version}.tar.gz -P /opt/ &&\
-      tar -xvzf /opt/fusiondirectory-plugins-${fusiondirectory_version}.tar.gz -C /opt &&\
-      mv /opt/fusiondirectory-plugins-${fusiondirectory_version} /opt/fusiondirectory-plugins &&\
-      rm -f /opt/fusiondirectory-plugins-${fusiondirectory_version}.tar.gz
+COPY generate_plugins_archives.sh /bin/
+COPY fusiondirectory.conf /etc/apache2/sites-available/fusiondirectory.conf
+#download the fusiondirectory plugins and create the installation archives
+RUN wget https://repos.fusiondirectory.org/sources/fusiondirectory/fusiondirectory-plugins-${FD_VERSION}.tar.gz -P /opt/ &&\
+      tar -xvzf /opt/fusiondirectory-plugins-${FD_VERSION}.tar.gz -C /opt &&\
+      chmod +x /bin/generate_plugins_archives.sh && /bin/generate_plugins_archives.sh &&\
+      rm -f /opt/fusiondirectory-plugins-${FD_VERSION}.tar.gz &&\
+      rm -r /opt/fusiondirectory-plugins-${FD_VERSION} &&\
+      chmod -R +r ${FD_PLUGINS_DIR}
 
 # COPY docker-entrypoint/fd-repository.key fd-repository.key
 # Apache Logging to stdout
@@ -61,17 +67,13 @@ RUN wget https://repos.fusiondirectory.org/sources/fusiondirectory/fusiondirecto
 #     ln -sf /proc/self/fd/1 /var/log/apache2/error.log && \
 #     ln -sf /proc/self/fd/1 /var/log/apache2/other_vhosts_access.log
 
-# fix : apt-get doesn't install the fusiondirectory doc on container
-# RUN cd /tmp && apt-get update && apt-get download fusiondirectory && dpkg-deb -x ./fusiondirectory*.deb /tmp && \
-#     cp -R /tmp/usr/share/doc/fusiondirectory /usr/share/doc/ && \
-#     rm -rf /tmp/* && apt-get clean autoclean && rm -rf /var/lib/apt/lists/*
 # configure better security for Apache2. disable obsolete configs
 
 RUN a2disconf other-vhosts-access-log && a2dissite 000-default && \
-    chmod 644 /etc/apache2/sites-available/fusiondirectory.conf && a2ensite fusiondirectory
+    chmod 640 /etc/apache2/sites-available/fusiondirectory.conf && a2ensite fusiondirectory
 
 COPY docker-entrypoint/entrypoint.sh /sbin/fd-entrypoint
 RUN chmod 750 /sbin/fd-entrypoint
 
-EXPOSE 80 443
+EXPOSE 80
 ENTRYPOINT ["/sbin/fd-entrypoint"]
