@@ -61,18 +61,17 @@ RUN wget https://repos.fusiondirectory.org/sources/fusiondirectory/fusiondirecto
       rm -r /opt/fusiondirectory-plugins-${FD_VERSION} &&\
       chmod -R +r ${FD_PLUGINS_DIR}
 
-# COPY docker-entrypoint/fd-repository.key fd-repository.key
 # Apache Logging to stdout
 # RUN ln -sf /proc/self/fd/1 /var/log/apache2/access.log && \
 #     ln -sf /proc/self/fd/1 /var/log/apache2/error.log && \
 #     ln -sf /proc/self/fd/1 /var/log/apache2/other_vhosts_access.log
 
 # configure better security for Apache2. disable obsolete configs
-
-RUN a2disconf other-vhosts-access-log && a2dissite 000-default && \
+RUN a2disconf other-vhosts-access-log && a2dissite 000-default && a2disconf security &&\
+    mv /etc/apache2/conf-available/security.conf /etc/apache2/conf-available/security_default.conf && \
     chmod 640 /etc/apache2/sites-available/fusiondirectory.conf && a2ensite fusiondirectory
-
 COPY docker-entrypoint/entrypoint.sh /sbin/fd-entrypoint
+COPY security_hardened.conf /etc/apache2/conf-available/
 RUN chmod 750 /sbin/fd-entrypoint
 
 EXPOSE 80
