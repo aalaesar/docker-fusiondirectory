@@ -83,9 +83,21 @@ function req_print_depends_list() {
 # ensure the destination folder exists
 mkdir -p "$FD_PLUGINS_DIR"
 # creates all the plugin archives:
+tmp_folder="/tmp/${FD_PLUGINS_DIR:-'build'}"
 for the_plugin in ${!fd_plugins_deps[*]}; do
   the_depends_list=($(req_print_depends_list "$the_plugin" | tr " " "\n" | sort -u))
+  # fix : simply can't have all the needed package folder at the root or the archive.
+  # Apparently, the fusiondirectory-setup command expect the plugins to be in a sub-dir of the archive
+  # so temporary building a folder to store the archive to build 
+  rm -rf "$tmp_folder/${the_plugin:-'fake'}" && mkdir -p "$tmp_folder/$the_plugin"
+  cp -r "/opt/fusiondirectory-plugins-${FD_VERSION}/$the_plugin" "$tmp_folder/$the_plugin/"
+  for the_depend in ${the_depends_list[*]}; do
+    cp -r "/opt/fusiondirectory-plugins-${FD_VERSION}/$the_depend" "$tmp_folder/$the_plugin/"
+  done
   # shellcheck disable=SC2086
-  tar --create --gzip --file "$FD_PLUGINS_DIR/${the_plugin}.tar.gz" --directory=/opt/fusiondirectory-plugins-${FD_VERSION} "$the_plugin" ${the_depends_list[*]}
+  echo "INFO: Creates archive for plugin ${the_plugin}."
+  tar --create --gzip --file "$FD_PLUGINS_DIR/${the_plugin}.tar.gz" --directory=$tmp_folder/ "$the_plugin"
+  rm -rf "$tmp_folder/${the_plugin:-'fake'}"
 done
-exit 0
+  rm -rf "${tmp_folder:-'/tmp/build'}"
+# exit 0
