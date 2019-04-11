@@ -3,15 +3,15 @@ ARG fd_version="1.2.3"
 
 FROM debian:stable-slim
 ARG fd_version
-ENV FD_HOME /var/www/fusiondirectory
+ENV FD_HOME /usr/share/fusiondirectory
 ENV FD_VERSION ${fd_version}
 ENV FD_PLUGINS_DIR /opt/fd_${FD_VERSION}_plugins
 
 # Install dependencies
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    wget ca-certificates curl \
+    wget ca-certificates curl ldap-utils\
     gettext javascript-common libarchive-extract-perl apache2 locales \
-    libjs-prototype libjs-scriptaculous smarty3 libcrypt-cbc-perl \
+    libjs-prototype libjs-scriptaculous smarty3 smarty-gettext libcrypt-cbc-perl \
     libdigest-sha-perl libfile-copy-recursive-perl libnet-ldap-perl \
     libpath-class-perl libterm-readkey-perl libxml-twig-perl \
     openssl php php-cas php-cli php-curl php-fpdf php-gd \
@@ -42,14 +42,23 @@ RUN mkdir -p /var/cache/fusiondirectory/template \
       tar -xvzf /opt/fusiondirectory-${FD_VERSION}.tar.gz -C /opt &&\
       mv /opt/fusiondirectory-${FD_VERSION} ${FD_HOME} &&\
       rm /opt/fusiondirectory-${FD_VERSION}.tar.gz &&\
-      chmod 755 ${FD_HOME}/contrib/bin/* &&\
+      chmod 750 ${FD_HOME}/contrib/bin/* &&\
+      sed -i "s|/var/www/fusiondirectory|${FD_HOME}|g" $(find ${FD_HOME}/contrib/bin/ -type f -maxdepth 1) &&\
       mv ${FD_HOME}/contrib/bin/* /usr/local/bin/ &&\
       mv ${FD_HOME}/contrib/smarty/plugins/*.php /usr/share/php/smarty3/plugins/ &&\
       mkdir -p /etc/ldap/schema/fusiondirectory/ &&\
       mv ${FD_HOME}/contrib/openldap/* /etc/ldap/schema/fusiondirectory/ &&\
       mv ${FD_HOME}/contrib/fusiondirectory.conf /var/cache/fusiondirectory/template/fusiondirectory.conf &&\
       rm -f /opt/fusiondirectory-${FD_VERSION}.tar.gz &&\
+      mkdir -p ${FD_HOME}/html/javascript &&\
+      ln -s /usr/share/javascript/scriptaculous ${FD_HOME}/html/javascript/scriptaculous &&\
+      ln -s /usr/share/javascript/prototype ${FD_HOME}/html/javascript/prototype &&\
       fusiondirectory-setup --yes --check-directories --update-cache --update-locales
+
+# FIX the breezy theme, wrong include path for most of scriptaculous & prototype javascripts
+RUN  sed -i 's|include/prototype.js|javascript/prototype/prototype.js|g' ${FD_HOME}/ihtml/themes/breezy/headers.tpl &&\
+     sed -i -E 's#include/(scriptaculous|builder|effects|dragdrop|controls\.js)#javascript/scriptaculous/\1#g' ${FD_HOME}/ihtml/themes/breezy/headers.tpl
+
 
 COPY generate_plugins_archives.sh /bin/
 COPY fusiondirectory.conf /etc/apache2/sites-available/fusiondirectory.conf
