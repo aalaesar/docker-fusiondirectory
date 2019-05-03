@@ -7,6 +7,7 @@
 
 ### provided by user ###
 # shellcheck disable=SC2155
+export FD_SERVICE=$(tr '[:upper:]' '[:lower:]' <<<"${FD_SERVICE:-yes}")
 export APACHE_SECURITY=$(tr '[:upper:]' '[:lower:]' <<<"${APACHE_SECURITY:-default}") 
 export INSTALL_SCHEMAS=$(tr '[:upper:]' '[:lower:]' <<<"${INSTALL_SCHEMAS:-no}")
 export OPENLDAP_URL="${OPENLDAP_URL:-ldap://localhost:389}"
@@ -16,6 +17,10 @@ if  [ -f $LDAP_CONFIG_PWD ]; then
 elif [ "$INSTALL_SCHEMAS" == 'yes' ] && [ -z "$LDAP_CONFIG_PWD" ]; then
  echo -e "ERROR: You have asked to install ldap schemas from Fusion Directory plugins to your ldap database
  But you havent provided the secret password of the config admin user
+ You can provide environment variable
+ OPENLDAP_URL
+ LDAP_CONFIG_USER
+ LDAP_CONFIG_PWD
  "
 fi
 export FD_PLUGINS=$(tr '[:upper:]' '[:lower:]' <<<"${FD_PLUGINS:-}")
@@ -131,8 +136,12 @@ install_fd_plugin_tar() {
     return 2
   fi
   echo "INFO: Installing Fusion Directory plugin '$my_plugin'..."
-  fusiondirectory-setup --install-plugins <<<"$my_plugin_archive"
-  # Note: le function leave all temporary files in /tmp. this can be reused
+  if [ $"FD_SERVICE" == 'yes' ]; then
+    fusiondirectory-setup --install-plugins <<<"$my_plugin_archive"
+    # Note: le function leave all temporary files in /tmp. this can be reused
+  else
+    tar -xzf "${my_plugin_archive}" -C /tmp/
+  fi
   # check if the user requires schema installation
   if [ "$INSTALL_SCHEMAS" == "yes" ]; then
     # at this stage schema file are expected to be in $FD_HOME/contrib/openldap/
@@ -155,10 +164,10 @@ install_fd_plugin_tar() {
     install_plugin_schemas "/tmp/$my_plugin/$my_plugin"
   else 
     echo "INFO: Plugin $my_plugin is now installed. You may want to install the ldap schemas in your Ldap database."
-    echo "INFO: Ldap Schemas are available in the container at: $FD_HOME/contrib/openldap"
   fi
   rm -rf "/tmp/${my_plugin:-fake}"
 }
+
 # # # # # # # # #
 # MAIN  ROUTINE #
 # # # # # # # # #
@@ -174,6 +183,7 @@ for item in $FD_PLUGINS; do
 done
 fi
 
-enable_a2_security
-
-run_fusiondirectory
+if [ $"FD_SERVICE" == 'yes' ]; then
+  enable_a2_security
+  run_fusiondirectory
+fi
