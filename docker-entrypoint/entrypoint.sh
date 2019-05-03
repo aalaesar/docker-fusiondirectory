@@ -10,8 +10,14 @@
 export APACHE_SECURITY=$(tr '[:upper:]' '[:lower:]' <<<"${APACHE_SECURITY:-default}") 
 export INSTALL_SCHEMAS=$(tr '[:upper:]' '[:lower:]' <<<"${INSTALL_SCHEMAS:-no}")
 export OPENLDAP_URL="${OPENLDAP_URL:-ldap://localhost:389}"
-# LDAP_CONFIG_USER
-# LDAP_CONFIG_PWD
+export LDAP_CONFIG_USER=${APACHE_LDAP_CONFIG_USERSECURITY:-cn=admin,cn=config}
+if  [ -f $LDAP_CONFIG_PWD ]; then
+  export LDAP_CONFIG_PWD=$(cat $LDAP_CONFIG_PWD)
+elif [ "$INSTALL_SCHEMAS" == 'yes' ] && [ -z "$LDAP_CONFIG_PWD" ]; then
+ echo -e "ERROR: You have asked to install ldap schemas from Fusion Directory plugins to your ldap database
+ But you havent provided the secret password of the config admin user
+ "
+fi
 export FD_PLUGINS=$(tr '[:upper:]' '[:lower:]' <<<"${FD_PLUGINS:-}")
 
 ### internal usage ###
