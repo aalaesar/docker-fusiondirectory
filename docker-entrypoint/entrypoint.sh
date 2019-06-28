@@ -12,8 +12,8 @@ export APACHE_SECURITY=$(tr '[:upper:]' '[:lower:]' <<<"${APACHE_SECURITY:-defau
 export INSTALL_SCHEMAS=$(tr '[:upper:]' '[:lower:]' <<<"${INSTALL_SCHEMAS:-no}")
 export OPENLDAP_URL="${OPENLDAP_URL:-ldap://localhost:389}"
 export LDAP_CONFIG_USER=${APACHE_LDAP_CONFIG_USERSECURITY:-cn=admin,cn=config}
-if  [ -f $LDAP_CONFIG_PWD ]; then
-  export LDAP_CONFIG_PWD=$(cat $LDAP_CONFIG_PWD)
+if  [ -f "$LDAP_CONFIG_PWD" ]; then
+  export LDAP_CONFIG_PWD=$(cat "$LDAP_CONFIG_PWD")
 elif [ "$INSTALL_SCHEMAS" == 'yes' ] && [ -z "$LDAP_CONFIG_PWD" ]; then
  echo -e "ERROR: You have asked to install ldap schemas from Fusion Directory plugins to your ldap database
  But you havent provided the secret password of the config admin user
@@ -54,16 +54,16 @@ enable_a2_security() {
 fd_config_find_ldap_url() {
   [ $# -ne 1 ] && return 2
   local fd_conf_file="$1"
-  this_result=$(grep URI $fd_conf_file |cut -d '"' -f2| cut -d '/' -f1-3)
-  echo $this_result
+  this_result=$(grep URI "$fd_conf_file" |cut -d '"' -f2| cut -d '/' -f1-3)
+  echo "$this_result"
 }
 
 install_ldap_schema() {
   # Install ONE ldap schema at a TIME in the LDAP database
   local this_schema=$1
   # try to find the server URL if not given in the environment
-  if [ -f  $FD_CONFIG_FILE ] && [ "$OPENLDAP_URL" == 'ldap://localhost:389' ]; then
-    OPENLDAP_URL=$(fd_config_find_ldap_url $FD_CONFIG_FILE)
+  if [ -f  "$FD_CONFIG_FILE" ] && [ "$OPENLDAP_URL" == 'ldap://localhost:389' ]; then
+    OPENLDAP_URL=$(fd_config_find_ldap_url "$FD_CONFIG_FILE")
   elif [ "$OPENLDAP_URL" == 'ldap://localhost:389' ]; then
     echo -e "ERROR: Unable to find the remote LDAP server !\nPlease Provide a Configuration file ($FD_CONFIG_FILE) or a value for 'OPENLDAP_URL' !"
     return 1
@@ -147,7 +147,7 @@ install_fd_plugin_tar() {
     # at this stage schema file are expected to be in $FD_HOME/contrib/openldap/
     # BUT we still rely on the archive to list all provided schemas 
     # first: get the list of plugins stored in the archive
-    archive_plugin_list=($(tar tf $my_plugin_archive | cut -d / -f2 | sort -u))
+    archive_plugin_list=($(tar tf "$my_plugin_archive" | cut -d / -f2 | sort -u))
     # remove the "main" plugin form the list as its name is known and will be installed last
     archive_plugin_list=(${archive_plugin_list[*]/$my_plugin/})
     # install the systems plugin first if present as it is a very common dependency
