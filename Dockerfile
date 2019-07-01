@@ -85,3 +85,4 @@ RUN chmod 750 /sbin/fd-entrypoint
 
 EXPOSE 80
 ENTRYPOINT ["/sbin/fd-entrypoint"]
+CMD ["run"] 

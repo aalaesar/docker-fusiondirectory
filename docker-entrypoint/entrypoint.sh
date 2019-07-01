@@ -11,17 +11,9 @@ export FD_SERVICE=$(tr '[:upper:]' '[:lower:]' <<<"${FD_SERVICE:-yes}")
 export APACHE_SECURITY=$(tr '[:upper:]' '[:lower:]' <<<"${APACHE_SECURITY:-default}") 
 export INSTALL_SCHEMAS=$(tr '[:upper:]' '[:lower:]' <<<"${INSTALL_SCHEMAS:-no}")
 export OPENLDAP_URL="${OPENLDAP_URL:-ldap://localhost:389}"
-export LDAP_CONFIG_USER=${APACHE_LDAP_CONFIG_USERSECURITY:-cn=admin,cn=config}
+export LDAP_CONFIG_USER=${LDAP_CONFIG_USER:-cn=admin,cn=config}
 if  [ -f "$LDAP_CONFIG_PWD" ]; then
   export LDAP_CONFIG_PWD=$(cat "$LDAP_CONFIG_PWD")
-elif [ "$INSTALL_SCHEMAS" == 'yes' ] && [ -z "$LDAP_CONFIG_PWD" ]; then
- echo -e "ERROR: You have asked to install ldap schemas from Fusion Directory plugins to your ldap database
- But you havent provided the secret password of the config admin user
- You can provide environment variable
- OPENLDAP_URL
- LDAP_CONFIG_USER
- LDAP_CONFIG_PWD
- "
 fi
 export FD_PLUGINS=$(tr '[:upper:]' '[:lower:]' <<<"${FD_PLUGINS:-}")
 
@@ -136,7 +128,7 @@ install_fd_plugin_tar() {
     return 2
   fi
   echo "INFO: Installing Fusion Directory plugin '$my_plugin'..."
-  if [ $"FD_SERVICE" == 'yes' ]; then
+  if [ "$FD_SERVICE" == 'yes' ]; then
     fusiondirectory-setup --install-plugins <<<"$my_plugin_archive"
     # Note: le function leave all temporary files in /tmp. this can be reused
   else
@@ -148,9 +140,9 @@ install_fd_plugin_tar() {
     # BUT we still rely on the archive to list all provided schemas 
     # first: get the list of plugins stored in the archive
     archive_plugin_list=($(tar tf "$my_plugin_archive" | cut -d / -f2 | sort -u))
-    # remove the "main" plugin form the list as its name is known and will be installed last
+    # remove the "main" plugin from the list as its name is known and will be installed last
     archive_plugin_list=(${archive_plugin_list[*]/$my_plugin/})
-    # install the systems plugin first if present as it is a very common dependency
+    # install the systems plugin first if present as it is a very common dependency for all other plugins
     if [[ "${archive_plugin_list[*]}" == *"systems"* ]] ; then
       install_plugin_schemas "/tmp/$my_plugin/systems"
     fi
@@ -183,7 +175,35 @@ for item in $FD_PLUGINS; do
 done
 fi
 
-if [ $"FD_SERVICE" == 'yes' ]; then
-  enable_a2_security
-  run_fusiondirectory
-fi
+while  [ "$#" -ne 0 ]; do
+  case $1 in
+  run)  for item in $FD_PLUGINS; do
+          install_fd_plugin_tar "$item"
+        done
+        enable_a2_security
+        run_fusiondirectory
+        break;;
+  init) shift;
+        export INSTALL_SCHEMAS='yes'
+        export FD_SERVICE='no'
+        if [ -z "$LDAP_CONFIG_PWD" ] || [ -z "$LDAP_CONFIG_USER" ] || [ -z "$OPENLDAP_URL" ] ; then
+        echo -e "ERROR: You have asked to install ldap schemas from Fusion Directory plugins to your ldap database
+        But haven't provided the full credentials of the cn=config admin user
+        You can provide environment variables or secrets:
+        OPENLDAP_URL
+        LDAP_CONFIG_USER
+        LDAP_CONFIG_PWD
+        "
+        fi
+        for coreSchema in "core-fd.schema" "core-fd-conf.schema" "ldapns.schema" "template-fd.schema"; do
+          install_ldap_schema "/etc/ldap/schema/fusiondirectory/$coreSchema"
+        done;;
+  plugins) shift;
+           for item in $FD_PLUGINS; do
+             install_fd_plugin_tar "$item"
+           done;;
+  *) exec "$@"
+     break ;;
+  esac
+  
+done
