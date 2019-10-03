@@ -27,7 +27,7 @@ run_fusiondirectory() {
   fi
   fusiondirectory-setup --check-directories --update-cache --update-locales
   # chmod 777 /tmp
-  ulimit -n 8192
+  # ulimit -n 8182
   echo "Starting fusiondirectory ..."
   exec apache2ctl -D FOREGROUND
   echo "FusionDirectory execution stopped"
@@ -94,7 +94,7 @@ install_plugin_schemas() {
   if [ -z "${schemas_list[*]}" ] ; then
     echo -e "No schema found for package $guess_my_name.\ncontinuing..."
   else
-    # given the legacy fusion directory wiki, schema are kinda installed this way:
+    # given the legacy fusion directory wiki, schemas are kinda installed this way:
     # non FD schema are installed first
     # then come FD-CONF schemas
     # then come FD schemas
@@ -164,16 +164,16 @@ install_fd_plugin_tar() {
 # MAIN  ROUTINE #
 # # # # # # # # #
 
-if [ "$INSTALL_SCHEMAS" == "yes" ]; then
-  for coreSchema in "core-fd.schema" "core-fd-conf.schema" "ldapns.schema" "template-fd.schema"; do
-    install_ldap_schema "/etc/ldap/schema/fusiondirectory/$coreSchema"
-  done
-fi
-if [ -n "$FD_PLUGINS" ];then
-for item in $FD_PLUGINS; do
-  install_fd_plugin_tar "$item"
-done
-fi
+# if [ "$INSTALL_SCHEMAS" == "yes" ]; then
+#   for coreSchema in "core-fd.schema" "core-fd-conf.schema" "ldapns.schema" "template-fd.schema"; do
+#     install_ldap_schema "/etc/ldap/schema/fusiondirectory/$coreSchema"
+#   done
+# fi
+# if [ -n "$FD_PLUGINS" ];then
+# for item in $FD_PLUGINS; do
+#   install_fd_plugin_tar "$item"
+# done
+# fi
 
 while  [ "$#" -ne 0 ]; do
   case $1 in
@@ -192,7 +192,7 @@ while  [ "$#" -ne 0 ]; do
         You can provide environment variables or secrets:
         OPENLDAP_URL
         LDAP_CONFIG_USER
-        LDAP_CONFIG_PWD
+        LDAP_CONFIG_PWD (can be a path to a file)
         "
         fi
         for coreSchema in "core-fd.schema" "core-fd-conf.schema" "ldapns.schema" "template-fd.schema"; do
@@ -202,6 +202,10 @@ while  [ "$#" -ne 0 ]; do
            for item in $FD_PLUGINS; do
              install_fd_plugin_tar "$item"
            done;;
+  list_plugins) listOfPlugins=$(find "$FD_PLUGINS_DIR" -name "*.tar.gz" |sed "s|$FD_PLUGINS_DIR/\(.*\)\.tar\.gz$|\1, |g" | sort)
+              echo "Available plugins in the image:"
+              echo "$listOfPlugins"
+              break ;;
   *) exec "$@"
      break ;;
   esac
