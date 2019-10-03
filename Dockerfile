@@ -14,7 +14,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libjs-prototype libjs-scriptaculous smarty3 smarty-gettext libcrypt-cbc-perl \
     libdigest-sha-perl libfile-copy-recursive-perl libnet-ldap-perl \
     libpath-class-perl libterm-readkey-perl libxml-twig-perl \
-    openssl php php-cas php-cli php-curl php-fpdf php-gd \
+    openssl php php-xml php-cas php-cli php-curl php-fpdf php-gd \
     php-imagick php-imap php-ldap php-mbstring php-recode \
     && apt-get clean autoclean && rm -rf /var/lib/apt/lists/*
 
