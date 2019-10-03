@@ -1,5 +1,5 @@
 
-ARG fd_version="1.2.3"
+ARG fd_version="1.3"
 
 FROM debian:stable-slim
 ARG fd_version
