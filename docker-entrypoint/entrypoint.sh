@@ -70,7 +70,7 @@ install_ldap_schema() {
     # hide the password that might be shown by the command logs.
     if [ -n "$LDAP_CONFIG_PWD" ]; then
   #  shellcheck disable=SC2001
-      echo "$logging" | sed "s/$LDAP_CONFIG_PWD/<HIDDEN>/g"
+      echo "$logging" | sed "s/${LDAP_CONFIG_PWD//\//\\/}/<HIDDEN>/g"
     else
       echo "$logging"
     fi
